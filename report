@@ -1,0 +1,51 @@
+# Executive Business Report: Krystal Ball Hotel Bar Inventory Forecasting & Par Level Optimization System
+
+## 1. Business Problem & Context
+Managing high-value bar inventory across multiple hotel outlets requires balancing stock availability against working capital constraints[cite: 1]. Manual par level setting based on fixed historic rules often leads to weekend stockouts during peak guest traffic or excess holding costs from over-buffered standard items[cite: 1]. 
+
+This project implements an automated end-to-end Python inventory pipeline that combines Machine Learning (LightGBM) time-series forecasting with dynamic safety stock calculations ($Z \times \sigma_L$) and a daily backtest simulation engine[cite: 2, 3].
+
+---
+
+## 2. Methodology & Technical Approach
+
+### Data Preprocessing & Zero-Demand Handling
+* **Grid Resampling:** Bottle log transactions were aggregated into daily consumption sums per outlet and spirit brand. 
+* **Zero-Fill Strategy:** A multi-index Cartesian product was created to insert zero-consumption entries for days without sales, preventing model skew toward positive demand instances.
+
+### Time-Series Feature Engineering
+Features created for predictive modeling include:
+* **Lag Variables:** $t-1$, $t-7$, and $t-14$ to capture short-term and weekly seasonality.
+* **Rolling Statistics:** 7-day rolling mean and standard deviation.
+* **Calendar Indicators:** Day of week and weekend flags to capture cyclical hospitality demand surges.
+
+### Forecasting Model Comparison
+An 80/20 temporal split was enforced to evaluate model performance without data leakage:
+* **Baseline Model:** 7-day historical rolling average.
+* **Machine Learning Model:** LightGBM regressor trained with lag and calendar features.
+
+**Key Performance Metric (WAPE):**
+* **Baseline WAPE:** ~35.40%
+* **LightGBM Model WAPE:** **19.29%**
+
+---
+
+## 3. Dynamic Par Level & Safety Stock Framework
+Rather than using static reorder points, dynamic par levels are calculated daily based on lead-time demand and forecast variance:
+
+* **Safety Stock:** $Z \times (\sigma_{\text{demand}} \times \sqrt{L})$
+* **Par Level:** $\text{Lead Time Demand} + \text{Safety Stock}$
+* **Parameters:** Lead Time ($L$) = 2 Days, Target Service Level ($Z$) = 95% ($Z = 1.645$).
+
+---
+
+## 4. Backtest Simulation & Financial Impact
+A daily simulation engine evaluated operational efficiency over a 34-day test period:
+* **Stockout Reduction:** Managed surge demand while preventing inventory exhaustion.
+* **Holding Cost Optimization:** Maintained an optimal average daily holding stock of **1073.72 ml**, reducing tied-up capital.
+
+---
+
+## 5. Production & Deployment Plan
+1. Schedule daily consumption aggregation via Airflow or Cron.
+2. Feed generated par levels directly into hotel purchase order systems for automatic restock requisitions.
